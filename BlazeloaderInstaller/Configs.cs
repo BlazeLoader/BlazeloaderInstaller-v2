@@ -11,7 +11,7 @@ namespace BlazeloaderInstaller {
         public const string LITELOADER_VERSION = "1.8";
         public const string LITELOADER_URL = "http://dl.liteloader.com/versions";
 
-        public const string BLAZELOADER_VERSION = "1.2";
+        public const string BLAZELOADER_VERSION = "1.1.1";
         public const string BLAZELOADER_URL = "http://dl.blazeloader.com/versions";
 
         public const string LAUNCH_WRAPPER = "1.11";
