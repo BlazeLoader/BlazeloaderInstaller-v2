@@ -171,6 +171,7 @@ namespace BlazeloaderInstaller {
                     name = VersionName,
                     javaArgs = launcherArgs.Text,
                     launcherVisibilityOnGameClose = (string)launcherVisibility.SelectedItem,
+                    lastVersionId = created.Name,
                     useHopperCrashService = false
                 });
             }
