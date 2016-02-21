@@ -5,12 +5,15 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <Color x:Key="Element_BG_Color">#FF252527</Color>
-        
-        <SolidColorBrush x:Key="Element_Background" Color="#FF252527"/>
-        <SolidColorBrush x:Key="Element_Foreground" Color="#FFF3F4F3"/>
-        <SolidColorBrush x:Key="Element_Border" Color="#FF515153"/>
 
-        <SolidColorBrush x:Key="Element_Border_2" Color="#FFF3F4F3"/>
+        <Color x:Key="Element_Border_Color">#FF515153</Color>
+        <Color x:Key="Element_Border_Color_2">#FF929293</Color>
+
+        <SolidColorBrush x:Key="Element_Background" Color="{DynamicResource Element_BG_Color}"/>
+        <SolidColorBrush x:Key="Element_Foreground" Color="#FFF3F4F3"/>
+        <SolidColorBrush x:Key="Element_Border" Color="{DynamicResource Element_Border_Color}"/>
+
+        <SolidColorBrush x:Key="Element_Border_2" Color="#FF929293"/>
         <SolidColorBrush x:Key="Element_Foreground_Disabled" Color="#FF726D6F"/>
 
         <SolidColorBrush x:Key="Progress_Foreground" Color="#FF0097FC" />
@@ -20,18 +23,38 @@
         <ControlTemplate x:Key="ButtonTemplate" TargetType="Button">
             <ContentPresenter>
                 <ContentPresenter.Content>
-                    <Grid x:Name="backColor" Background="{DynamicResource Element_Background}">
-                        <Label Name="text" Width="{TemplateBinding Width}" FontSize="{TemplateBinding FontSize}" HorizontalContentAlignment="Center" Height="{TemplateBinding Height}" Content="{TemplateBinding Content}" BorderThickness="1" VerticalContentAlignment="Center"
-                               Foreground="{DynamicResource Element_Foreground}" BorderBrush="{DynamicResource Element_Border_2}">
+                    <Border x:Name="border" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{DynamicResource Element_Border_2}"
+                            Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+                        <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource Element_BG_Color}" />
+                        </Border.Background>
+                        <Label Name="text" FontSize="{TemplateBinding FontSize}" Content="{TemplateBinding Content}" BorderThickness="1"
+                               Foreground="{DynamicResource Element_Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="{TemplateBinding Padding}">
                         </Label>
-                    </Grid>
+                    </Border>
                 </ContentPresenter.Content>
             </ContentPresenter>
             <ControlTemplate.Triggers>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter TargetName="text" Property="Foreground" Value="{DynamicResource Element_Foreground_Disabled}" />
-                    <Setter TargetName="text" Property="BorderBrush" Value="{DynamicResource Element_Border}" />
+                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Element_Border}" />
                 </Trigger>
+                <EventTrigger RoutedEvent="MouseEnter">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="Background.Color" From="#FF252527" To="#FF3A3A3B" Duration="0:0:0.1" />
+                            <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="BorderBrush.Color" From="#FF929293" To="#FF66B9FC" Duration="0:0:0.1" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="MouseLeave">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="Background.Color" From="#FF3A3A3B" To="#FF252527" Duration="0:0:0.1" />
+                            <ColorAnimation Storyboard.TargetName="border" Storyboard.TargetProperty="BorderBrush.Color" From="#FF66B9FC" To="#FF929293" Duration="0:0:0.1" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
@@ -95,7 +118,7 @@
             <Grid>
                 <Label Content="{Binding DisplayName}" Width="Auto" Height="30" Margin="0,0,0,0" Foreground="{DynamicResource Element_Foreground}" >
                     <Label.ToolTip>
-                        <ToolTip Content="{Binding Name}"></ToolTip>
+                        <ToolTip Content="{Binding Description}"></ToolTip>
                     </Label.ToolTip>
                 </Label>
             </Grid>

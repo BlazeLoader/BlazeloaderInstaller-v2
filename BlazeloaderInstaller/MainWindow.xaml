@@ -23,7 +23,7 @@
                 <TextBlock Canvas.Left="10" TextWrapping="Wrap" Canvas.Top="10" Height="34" Width="333" Text="Please select the type of installation you would like to perform:"/>
                 <Button x:Name="client_install" Template="{DynamicResource ButtonTemplate}" Content="Client" Canvas.Left="32" Canvas.Top="49" Width="278" Height="54" Click="client_install_Click"></Button>
                 <Button x:Name="server_install" Template="{DynamicResource ButtonTemplate}" Content="Server" ToolTip="NYI Check back later" IsEnabled="False" Canvas.Left="32" Canvas.Top="123" Width="278" Height="53" Click="server_install_Click"></Button>
-                <Button x:Name="manual_install" Template="{DynamicResource ButtonTemplate}" Content="Manual (Advanced)" ToolTip="NYI Check back later" IsEnabled="False" Canvas.Left="32" Canvas.Top="194" Width="278" Height="54" Click="manual_install_Click"></Button>
+                <Button x:Name="manual_install" Template="{DynamicResource ButtonTemplate}" Content="Manual (Advanced)" Canvas.Left="32" Canvas.Top="194" Width="278" Height="54" Click="manual_install_Click"></Button>
                 <Button x:Name="dev_install" Template="{DynamicResource ButtonTemplate}" Content="Developer (Advanced)" ToolTip="NYI Check back later" IsEnabled="False" Canvas.Left="32" Canvas.Top="265" Width="278" Height="54" Click="dev_install_Click"></Button>
             </Canvas>
         </Grid>

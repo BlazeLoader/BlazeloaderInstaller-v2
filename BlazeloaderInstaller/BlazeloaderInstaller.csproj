@@ -89,6 +89,7 @@
     <Compile Include="LauncherProfiles.cs" />
     <Compile Include="LibrariesHandler.cs" />
     <Compile Include="LibraryManager.cs" />
+    <Compile Include="ManualInstallHandler.cs" />
     <Compile Include="MCPatcherOpts.cs" />
     <Compile Include="Repo.cs" />
     <Compile Include="StageHandler.cs" />

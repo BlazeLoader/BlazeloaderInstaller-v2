@@ -15,11 +15,19 @@ namespace BlazeloaderInstaller {
         private string path;
         public JsonFormat Data;
 
+        public bool IsCorrupt {
+            get; private set;
+        }
+
         public JsonFile(string path) {
             this.path = path;
             if (File.Exists(path)) {
-                using (FileStream stream = File.OpenRead(path)) {
-                    Data = (JsonFormat)serialiser.ReadObject(stream);
+                try {
+                    using (FileStream stream = File.OpenRead(path)) {
+                        Data = (JsonFormat)serialiser.ReadObject(stream);
+                    }
+                } catch (SerializationException) {
+                    IsCorrupt = true;
                 }
             }
         }
@@ -33,7 +41,7 @@ namespace BlazeloaderInstaller {
                 releaseTime = inherited.releaseTime,
                 type = inherited.type,
                 minecraftArguments = inherited.minecraftArguments,
-                mainClass = "net.minecraft.launchwrapper.Launch",
+                mainClass = Configs.MAIN_CLASS,
                 minimumLauncherVersion = inherited.minimumLauncherVersion,
                 jar = inherited.jar
             };
@@ -61,6 +69,23 @@ namespace BlazeloaderInstaller {
         public void save() {
             using (FileStream stream = File.Create(path)) {
                 serialiser.WriteObject(stream, Data);
+            }
+        }
+
+        public bool hasLibrary(string name) {
+            return matchingLibrary(name) != null;
+        }
+
+        public Library matchingLibrary(string name) {
+            foreach (Library i in Data.libraries) {
+                if (i.name.ToLower().Contains(name)) return i;
+            }
+            return null;
+        }
+
+        public string inheritsFrom {
+            get {
+                return Data.inheritsFrom == null ? "" : Data.inheritsFrom;
             }
         }
     }

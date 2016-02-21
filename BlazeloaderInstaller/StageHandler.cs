@@ -28,15 +28,15 @@ namespace BlazeloaderInstaller {
             return ButtonAction.NONE;
         }
 
-        public void prev(MainWindow window) {
+        public virtual void prev(MainWindow window) {
             window.reinitHandler(Previous);
         }
 
         protected string selectFolder(string initialPath) {
             FolderBrowserDialog d = new FolderBrowserDialog() {
-                ShowNewFolderButton = true,
-                SelectedPath = Environment.ExpandEnvironmentVariables(initialPath)
+                ShowNewFolderButton = true
             };
+            if (initialPath != null) d.SelectedPath = Environment.ExpandEnvironmentVariables(initialPath);
             if (d.ShowDialog() == DialogResult.OK) {
                 return d.SelectedPath;
             }

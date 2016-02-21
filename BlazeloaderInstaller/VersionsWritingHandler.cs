@@ -39,7 +39,7 @@ namespace BlazeloaderInstaller {
         public VersionsWritingHandler(MinecraftDirectory man, Version selected) {
             this.selected = selected;
             this.man = man;
-            versionFile = new JsonFile(selected.json);
+            versionFile = selected.file;
         }
         
         private string upgradeVer() {
@@ -163,9 +163,8 @@ namespace BlazeloaderInstaller {
                 window.initHandler(new LibrariesHandler(man.getLibraries()));
                 return;
             }
-            Version created = man.createVersion(VersionName);
-            JsonFile file = new JsonFile(created.json, created.Name, versionFile.Data);
-            file.save();
+            Version created = man.createVersion(VersionName, versionFile.Data);
+            created.file.save();
             if (includeProfile.IsChecked == true) {
                 man.getProfiles().AddProfile(new Profile() {
                     name = VersionName,

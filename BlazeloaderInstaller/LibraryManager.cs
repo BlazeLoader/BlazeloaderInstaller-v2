@@ -83,12 +83,21 @@ namespace BlazeloaderInstaller {
             }
         }
 
-        private void extractLibraryLocal(string resource, string file) {
+        public static void extractLibraryLocal(string resource, string file) {
             using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("BlazeloaderInstaller.Resources." + resource)) {
                 using (FileStream output = File.Create(file)) {
                     stream.CopyTo(output);
                 }
             }
+        }
+
+        public static bool hasLibraryEmbed(string resource) {
+            foreach (string name in Assembly.GetExecutingAssembly().GetManifestResourceNames()) {
+                if (name == "BlazeloaderInstaller.Resources." + resource) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

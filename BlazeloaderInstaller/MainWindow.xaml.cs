@@ -159,7 +159,7 @@ namespace BlazeloaderInstaller {
         }
         
         private void manual_install_Click(object sender, RoutedEventArgs e) {
-
+            initHandler(new ManualInstallHandler());
         }
 
         private void server_install_Click(object sender, RoutedEventArgs e) {

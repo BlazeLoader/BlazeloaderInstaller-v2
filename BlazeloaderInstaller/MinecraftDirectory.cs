@@ -53,13 +53,16 @@ namespace BlazeloaderInstaller {
             if (Directory.Exists(versions)) {
                 string[] dirs = Directory.GetDirectories(versions);
                 foreach (string i in dirs) {
-                    var v = new Version(i);
-                    if (File.Exists(v.json)) {
+                    var v = new Version(this, i);
+                    if (v.file != null) {
                         allDetectedVersions.Add(v);
                         if (isVersionSupported(v)) {
                             detectedVersions.Add(v);
                         }
                     }
+                }
+                foreach (Version v in allDetectedVersions) {
+                    v.initApis(v.Name.ToLower());
                 }
             }
         }
@@ -68,8 +71,8 @@ namespace BlazeloaderInstaller {
             return showUnsupported || v.Name.Split('-')[0] == Configs.MINECRAFT_VERSION;
         }
 
-        public Version createVersion(string name) {
-            Version result = new Version(Path.Combine(versions, name));
+        public Version createVersion(string name, JsonFormat data) {
+            Version result = new Version(this, name, Path.Combine(versions, name), data);
             Directory.CreateDirectory(result.path);
             return result;
         }
@@ -87,6 +90,10 @@ namespace BlazeloaderInstaller {
         public string path;
         public string json;
 
+        public JsonFile file {
+            get; private set;
+        }
+
         public string mcVer;
 
         public bool isLiteLoader = false;
@@ -96,8 +103,12 @@ namespace BlazeloaderInstaller {
         public bool isBlazeLoader = false;
         public string blazeVer;
         public bool isMCPatcher = false;
+        public string mcpVer;
 
-        public Version(string path) {
+        private MinecraftDirectory mc;
+
+        public Version(MinecraftDirectory mc, string path) {
+            this.mc = mc;
             this.path = path;
             Name = path.Split('/', '\\').Last();
             json = Path.Combine(path, Name + ".json");
@@ -106,8 +117,27 @@ namespace BlazeloaderInstaller {
             } else {
                 DisplayName = Name;
             }
-            initApis(Name.ToLower());
+            if (Name == Configs.MINECRAFT_VERSION) {
+                DisplayName += " (recommended)";
+            }
+            if (File.Exists(json)) {
+                file = new JsonFile(json);
+                if (file.IsCorrupt) {
+                    file = null;
+                    return;
+                }
+            }
         }
+
+        public Version(MinecraftDirectory mc, string name, string path, JsonFormat data) {
+            this.mc = mc;
+            this.path = path;
+            Name = name;
+            json = Path.Combine(path, Name + ".json");
+            file = new JsonFile(json, Name, data);
+        }
+
+        private Version() { }
 
         public string Name {
             get; private set;
@@ -116,10 +146,29 @@ namespace BlazeloaderInstaller {
             get; private set;
         }
 
+        private string _desc = null;
+        public string Description {
+            get {
+                return _desc == null ? _desc = desc() : _desc;
+            }
+        }
+
         private string unmatch = null;
         public string UnMatchedName {
             get {
                 return unmatch == null ? unmatch = unmatched() : unmatch;
+            }
+        }
+
+        private Version parent = null;
+        public Version Parent {
+            get {
+                if (parent == null) {
+                    foreach (Version i in mc.allDetectedVersions) {
+                        if (i.Name == file.inheritsFrom) return i;
+                    }
+                }
+                return parent;
             }
         }
 
@@ -134,30 +183,57 @@ namespace BlazeloaderInstaller {
         }
 
         public void initApis(string nameL) {
-            isBlazeLoader = nameL.IndexOf("blazeloader") != -1;
-            isLiteLoader = nameL.IndexOf("liteloader") != -1;
-            isForge = nameL.IndexOf("forge") != -1;
-            isMCPatcher = nameL.IndexOf("mcpatcher") != -1;
-            initApiVersions(nameL);
+            initialised = true;
+            if (Parent != null) {
+                Parent.inheritApis(this);
+            }
+            Library lib = null;
+            mcVer = nameL.Split('-')[0];
+            if ((lib = file.matchingLibrary("blazeloader")) != null) {
+                isBlazeLoader = true;
+                blazeVer = lib.name.Split(':').Last();
+            }
+            if ((lib = file.matchingLibrary("liteloader")) != null) {
+                isLiteLoader = true;
+                liteVer = lib.name.Split(':').Last();
+            }
+            if ((lib = file.matchingLibrary("forge")) != null) {
+                isForge = true;
+                forgeVer = lib.name.Split(':').Last().Split('-').Last();
+            }
+            if (mcpVer == null) {
+                mcpVer = MCPatcherOpts.getMCPatcherVersion(this);
+                isMCPatcher = mcpVer != null;
+            }
         }
 
-        private void initApiVersions(string nameL) {
-            mcVer = nameL.Split('-')[0];
-            if (isLiteLoader) {
-                liteVer = nameL.Split(new string[] { "liteloader" }, StringSplitOptions.None).Last().Split('-')[0];
+        private bool initialised = false;
+        private bool recurseCatch = false;
+        private void inheritApis(Version target) {
+            if (target == this || recurseCatch) return;
+            if (!initialised) {
+                recurseCatch = true;
+                initApis(Name.ToLower());
+                recurseCatch = false;
             }
             if (isBlazeLoader) {
-                blazeVer = nameL.Split(new string[] { "blazeloader" }, StringSplitOptions.None).Last().Split('-')[0];
+                target.isBlazeLoader = isBlazeLoader;
+                target.blazeVer = blazeVer;
+            }
+            if (isLiteLoader) {
+                target.isLiteLoader |= isLiteLoader;
+                target.liteVer = liteVer;
             }
             if (isForge) {
-                if (nameL.IndexOf("forge" + Configs.MINECRAFT_VERSION) == -1) {
-                    forgeVer = nameL.Split(new string[] { "forge" }, StringSplitOptions.None).Last().Split('-')[0];
-                } else {
-                    forgeVer = nameL.Split(new string[] { "forge" + Configs.MINECRAFT_VERSION + "-" }, StringSplitOptions.None).Last().Split('-')[0];
-                }
+                target.isForge |= isForge;
+                target.forgeVer = forgeVer;
+            }
+            if (isMCPatcher) {
+                target.isMCPatcher |= isMCPatcher;
+                target.mcpVer = mcpVer;
             }
         }
-
+        
         private string unmatched() {
             string result = Regex.Replace(Name, "-" + mcVer + "-", "", RegexOptions.IgnoreCase);
             if (isBlazeLoader) result = Regex.Replace(result, "blazeloader-" + blazeVer, "", RegexOptions.IgnoreCase);
@@ -173,6 +249,18 @@ namespace BlazeloaderInstaller {
             while (result.Contains("--")) result = result.Replace("--", "-");
             if (result.StartsWith("-")) result = result.Substring(1, result.Length);
             if (result.EndsWith("-")) result = result.Substring(0, result.Length - 1);
+            return result;
+        }
+
+        private string desc() {
+            string result = Name;
+            if (Api != "Vanilla") {
+                result = UnMatchedName + " with";
+                if (isBlazeLoader) result += "\n BlazeLoader " + blazeVer;
+                if (isLiteLoader) result += "\n LiteLoader " + liteVer;
+                if (isForge) result += "\n Minecraft Forge " + forgeVer;
+                if (isMCPatcher) result += "\n MCPatcher " + mcpVer;
+            }
             return result;
         }
     }

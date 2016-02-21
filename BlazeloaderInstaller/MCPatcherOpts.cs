@@ -10,26 +10,26 @@ using System.IO.Compression;
 
 namespace BlazeloaderInstaller {
     public static class MCPatcherOpts {
+        private static char[] LINES = new char[] { '\n', '\r' };
         public static string getMCPatcherVersion(Version ver) {
             string jar = Path.Combine(ver.path, ver.Name + ".jar");
             if (File.Exists(jar)) {
                 using (ZipArchive z = ZipFile.OpenRead(jar)) {
                     var entry = z.GetEntry("mcpatcher.properties");
                     if (entry != null) {
-                        byte[] data;
-                        using (Stream s = entry.Open()) {
-                            data = new byte[s.Length];
-                            s.Read(data, 0, data.Length);
+                        string data;
+                        using (StreamReader reader = new StreamReader(entry.Open())) {
+                            data = reader.ReadToEnd();
                         }
-                        string[] lines = Convert.ToBase64String(data).Split('\n');
+                        string[] lines = data.Split(LINES);
                         foreach (string i in lines) {
                             string[] pair = i.Split('=');
-                            if (pair.Length > 1 && pair[0] == "patcherVersion") return pair[1];
+                            if (pair.Length > 1 && pair[0] == "patcherVersion") return pair[1].Trim();
                         }
                     }
                 }
             }
-            return "unknown";
+            return null;
         }
     }
 }
