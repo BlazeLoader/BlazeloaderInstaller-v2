@@ -25,8 +25,12 @@ namespace BlazeloaderInstaller {
         public LauncherProfiles(string minecraftDir) {
             path = Path.Combine(minecraftDir, "launcher_profiles.json");
             if (File.Exists(path)) {
-                using (FileStream stream = File.OpenRead(path)) {
-                    Data = (Profiles)serialiser.ReadObject(stream);
+                try {
+                    using (FileStream stream = File.OpenRead(path)) {
+                        Data = (Profiles)serialiser.ReadObject(stream);
+                    }
+                } catch (SerializationException) {
+                    Data = new Profiles();
                 }
             }
         }
