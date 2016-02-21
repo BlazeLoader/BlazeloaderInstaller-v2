@@ -101,5 +101,10 @@ namespace BlazeloaderInstaller {
                 window.initHandler(new VersionsWritingHandler(man, ((Version)listing.SelectedItem)));
             }
         }
+
+        public override void prev(MainWindow window) {
+            win.NextEnabled = true;
+            base.prev(window);
+        }
     }
 }
