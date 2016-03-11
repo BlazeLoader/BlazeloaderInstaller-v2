@@ -12,8 +12,7 @@ namespace BlazeloaderInstaller {
         private MinecraftDirectory man;
         private Version selected;
         private JsonFile versionFile;
-        private Library blazeLoaderLib;
-
+        
         private TextBox name;
         private CheckBox includeProfile;
 
@@ -41,22 +40,10 @@ namespace BlazeloaderInstaller {
             this.man = man;
             versionFile = selected.file;
         }
-        
-        private string upgradeVer() {
-            foreach (Library i in versionFile.Data.libraries) {
-                if (i.name.ToLower().IndexOf("blazeloader") != -1) {
-                    blazeLoaderLib = i;
-                    string ver = i.name.Split(':').Last();
-                    return ver != Configs.BLAZELOADER_VERSION ? ver : null;
-                }
-            }
-            return null;
-        }
-
 
         public override void init(MainWindow window, IStageHandler prev) {
             if (selected.isBlazeLoader) {
-                string ver = upgradeVer();
+                bool? ver = selected.blazeVer.Compare(VersionNumber.BLAZELOADER_VERSION_NUM);
                 TextBlock message = new TextBlock() {
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(10, 10, 10, 0),
@@ -66,8 +53,11 @@ namespace BlazeloaderInstaller {
                 if (ver == null) {
                     message.Text = "Nothing to do at the moment. This version is Up to Date.";
                     blocked = true;
+                } else if (ver == true) {
+                    message.Text = "The selected version has a newer version of Blazeloaader (" + selected.blazeVer.Raw + ") installed. This installer does not support downgrades.";
+                    blocked = true;
                 } else {
-                    message.Text = "The selected version already has a previous version of BlazeLoader (" + ver + ") installed. It will be upgraded to the current version.";
+                    message.Text = "The selected version already has a previous version of BlazeLoader (" + selected.blazeVer.Raw + ") installed. It will be upgraded to the current version.";
                     upgrading = true;
                 }
                 Canvas.Children.Add(message);
@@ -158,7 +148,7 @@ namespace BlazeloaderInstaller {
                 return;
             }
             if (upgrading) {
-                blazeLoaderLib.name = "com.blazeloader:blazeloader:" + Configs.BLAZELOADER_VERSION;
+                selected.file.matchingLibrary("blazeloader").name = Configs.BLAZELOADER_LIB;
                 versionFile.save();
                 window.initHandler(new LibrariesHandler(man.getLibraries()));
                 return;

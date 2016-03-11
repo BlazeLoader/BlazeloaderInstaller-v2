@@ -64,6 +64,8 @@ namespace BlazeloaderInstaller {
                 foreach (Version v in allDetectedVersions) {
                     v.initApis(v.Name.ToLower());
                 }
+                allDetectedVersions = allDetectedVersions.OrderBy(o => o.getApiIndex()).ToList();
+                detectedVersions = detectedVersions.OrderBy(o => o.getApiIndex()).ToList();
             }
         }
 
@@ -87,6 +89,7 @@ namespace BlazeloaderInstaller {
     }
 
     public class Version {
+        public static string[] APIS = new string[] { "Vanilla", "BlazeLoader", "LiteLoader", "Minecraft Forge", "MCPatcher" };
         public string path;
         public string json;
 
@@ -101,7 +104,7 @@ namespace BlazeloaderInstaller {
         public bool isForge = false;
         public string forgeVer;
         public bool isBlazeLoader = false;
-        public string blazeVer;
+        public VersionNumber blazeVer;
         public bool isMCPatcher = false;
         public string mcpVer;
 
@@ -112,20 +115,32 @@ namespace BlazeloaderInstaller {
             this.path = path;
             Name = path.Split('/', '\\').Last();
             json = Path.Combine(path, Name + ".json");
-            if (Name.Length > 50) {
-                DisplayName = Name.Substring(0, 47) + "...";
-            } else {
-                DisplayName = Name;
-            }
-            if (Name == Configs.MINECRAFT_VERSION) {
-                DisplayName += " (recommended)";
-            }
             if (File.Exists(json)) {
                 file = new JsonFile(json);
                 if (file.IsCorrupt) {
                     file = null;
                     return;
                 }
+            }
+        }
+
+        private void setDisplayName() {
+            if (Name == Configs.MINECRAFT_VERSION) {
+                SetDisplayNamePart(36);
+                DisplayName += " (recommended)";
+            } else if (isBlazeLoader && blazeVer.IsOlder()) {
+                SetDisplayNamePart(40);
+                DisplayName += " (upgrade)";
+            } else {
+                SetDisplayNamePart(50);
+            }
+        }
+
+        private void SetDisplayNamePart(int len) {
+            if (Name.Length > len) {
+                DisplayName = Name.Substring(0, len - 3) + "...";
+            } else {
+                DisplayName = Name;
             }
         }
 
@@ -174,12 +189,16 @@ namespace BlazeloaderInstaller {
 
         public string Api {
             get {
-                if (isBlazeLoader) return "BlazeLoader";
-                if (isLiteLoader) return "LiteLoader";
-                if (isForge) return "Minecraft Forge";
-                if (isMCPatcher) return "MCPatcher";
-                return "Vanilla";
+                return APIS[getApiIndex()];
             }
+        }
+
+        public int getApiIndex() {
+            if (isBlazeLoader) return 1;
+            if (isLiteLoader) return 2;
+            if (isForge) return 3;
+            if (isMCPatcher) return 4;
+            return 0;
         }
 
         public void initApis(string nameL) {
@@ -191,7 +210,7 @@ namespace BlazeloaderInstaller {
             mcVer = nameL.Split('-')[0];
             if ((lib = file.matchingLibrary("blazeloader")) != null) {
                 isBlazeLoader = true;
-                blazeVer = lib.name.Split(':').Last();
+                blazeVer = new VersionNumber(lib.name.Split(':').Last());
             }
             if ((lib = file.matchingLibrary("liteloader")) != null) {
                 isLiteLoader = true;
@@ -205,6 +224,7 @@ namespace BlazeloaderInstaller {
                 mcpVer = MCPatcherOpts.getMCPatcherVersion(this);
                 isMCPatcher = mcpVer != null;
             }
+            setDisplayName();
         }
 
         private bool initialised = false;
@@ -236,7 +256,7 @@ namespace BlazeloaderInstaller {
         
         private string unmatched() {
             string result = Regex.Replace(Name, "-" + mcVer + "-", "", RegexOptions.IgnoreCase);
-            if (isBlazeLoader) result = Regex.Replace(result, "blazeloader-" + blazeVer, "", RegexOptions.IgnoreCase);
+            if (isBlazeLoader) result = Regex.Replace(result, "blazeloader-" + blazeVer.Raw, "", RegexOptions.IgnoreCase);
             if (isLiteLoader) result = Regex.Replace(result, "liteloader" + liteVer, "", RegexOptions.IgnoreCase);
             if (isForge) {
                 result = Regex.Replace(result, "forge-" + forgeVer, "", RegexOptions.IgnoreCase);
@@ -256,7 +276,7 @@ namespace BlazeloaderInstaller {
             string result = Name;
             if (Api != "Vanilla") {
                 result = UnMatchedName + " with";
-                if (isBlazeLoader) result += "\n BlazeLoader " + blazeVer;
+                if (isBlazeLoader) result += "\n BlazeLoader " + blazeVer.Raw;
                 if (isLiteLoader) result += "\n LiteLoader " + liteVer;
                 if (isForge) result += "\n Minecraft Forge " + forgeVer;
                 if (isMCPatcher) result += "\n MCPatcher " + mcpVer;

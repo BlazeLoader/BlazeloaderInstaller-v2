@@ -94,6 +94,7 @@
     <Compile Include="Repo.cs" />
     <Compile Include="StageHandler.cs" />
     <Compile Include="MinecraftDirectory.cs" />
+    <Compile Include="VersionComparer.cs" />
     <Compile Include="VersionsSelectionHandler.cs" />
     <Compile Include="VersionsWritingHandler.cs" />
     <Page Include="MainWindow.xaml">

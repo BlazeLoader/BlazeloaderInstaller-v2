@@ -37,8 +37,8 @@ namespace BlazeloaderInstaller {
                 Text = Configs.LIBRARIES,
                 IsReadOnly = true
             });
-            Lib("blazeloader-" + Configs.BLAZELOADER_VERSION + ".jar", Configs.BLAZELOADER_URL);
-            Lib("liteloader-" + Configs.LITELOADER_VERSION + ".jar", Configs.LITELOADER_URL);
+            Lib(Configs.BLAZELOADER_URL, Configs.BLAZELOADER_LIB);
+            Lib(Configs.LITELOADER_URL, Configs.LITELOADER_LIB);
             Label("Main Class:");
             Box(Configs.MAIN_CLASS);
         }
@@ -67,7 +67,9 @@ namespace BlazeloaderInstaller {
             });
         }
 
-        private void Lib(string name, string dlLocation) {
+        private void Lib(string url, string lib) {
+            string dlLocation = LibraryManager.libUrl(url, lib);
+            string name = Path.GetFileName(dlLocation);
             StackPanel panel = new StackPanel() {
                 Orientation = Orientation.Horizontal
             };
@@ -84,6 +86,9 @@ namespace BlazeloaderInstaller {
             b.Click += delegate {
                 Download_Click(b, dlLocation);
             };
+            LibraryManager.verifyLocation(dlLocation, () => {
+                dlLocation = LibraryManager.libUrl(url, lib + "-SNAPSHOT");
+            });
             panel.Children.Add(b);
             if (LibraryManager.hasLibraryEmbed(name)) {
                 b = new Button() {

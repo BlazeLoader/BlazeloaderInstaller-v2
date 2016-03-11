@@ -47,22 +47,22 @@ namespace BlazeloaderInstaller {
             };
             Data.libraries = new List<Library>();
             Data.libraries.Add(new Library() {
-                name = "com.blazeloader:blazeloader:" + Configs.BLAZELOADER_VERSION,
+                name = Configs.BLAZELOADER_LIB,
                 url = Configs.BLAZELOADER_URL
             });
             if (Data.minecraftArguments.ToLower().IndexOf("liteloader") == -1) {
                 Data.minecraftArguments += " " + Configs.LITELOADER_TWEAK;
                 Data.libraries.Add(new Library() {
-                    name = "com.mumfrey:liteloader:" + Configs.LITELOADER_VERSION,
+                    name = Configs.LITELOADER_LIB,
                     url = Configs.LITELOADER_URL
                 });
             }
             Data.minecraftArguments += " " + Configs.BLAZELOADER_TWEAK;
             Data.libraries.Add(new Library() {
-                name = "net.minecraft:launchwrapper:" + Configs.LAUNCH_WRAPPER
+                name = Configs.LAUNCH_WRAPPER
             });
             Data.libraries.Add(new Library() {
-                name = "org.ow2.asm:asm-all:" + Configs.ASM
+                name = Configs.ASM
             });
         }
 

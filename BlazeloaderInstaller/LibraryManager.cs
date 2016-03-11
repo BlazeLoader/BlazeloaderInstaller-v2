@@ -20,13 +20,6 @@ namespace BlazeloaderInstaller {
     public class LibraryManager {
         private string libraries;
         
-
-        private string blazeloaderLocation;
-        private string liteloaderLocation;
-
-        private string blazeloaderName;
-        private string liteloaderName;
-        
         public event ChangedEventHandler StageChanged;
         private void onChanged(EventType ev, int progress, params string[] message) {
             if (StageChanged != null) StageChanged(this, new ChangedEventArgs() {
@@ -41,46 +34,74 @@ namespace BlazeloaderInstaller {
 
         public LibraryManager(string minecraftDir) {
             libraries = Path.Combine(minecraftDir, "libraries");
-            blazeloaderName = "blazeloader-" + Configs.BLAZELOADER_VERSION + ".jar";
-            liteloaderName = "liteloader-" + Configs.LITELOADER_VERSION + ".jar";
-            blazeloaderLocation = Path.Combine(libraries, "com", "blazeloader", "blazeloader", Configs.BLAZELOADER_VERSION);
-            liteloaderLocation = Path.Combine(libraries, "com", "mumfrey", "liteloader", Configs.LITELOADER_VERSION);
         }
 
         public void writeRequiredLibraries() {
             int stage = 0;
-            tryDownloadLibrary(Configs.LITELOADER_URL, liteloaderLocation, liteloaderName, ref stage, 2, 0);
-            tryDownloadLibrary(Configs.BLAZELOADER_URL, blazeloaderLocation, blazeloaderName, ref stage, 2, 0);
+            tryDownloadLibrary(Configs.LITELOADER_URL, Configs.LITELOADER_LIB, ref stage, 2, 0);
+            tryDownloadLibrary(Configs.BLAZELOADER_URL, Configs.BLAZELOADER_LIB, ref stage, 2, 0);
             onCompleted();
         }
-
-        private void tryDownloadLibrary(string repo, string destination, string fileName, ref int stage, int total, int progress) {
-            string jar = Path.Combine(destination, fileName);
-            if (!File.Exists(jar)) {
-                onChanged(EventType.START, 0, "Stage " + stage + "/" + total + ": Downloading " + fileName);
-                Directory.CreateDirectory(destination);
-                downloadLibrary(repo, fileName, jar, progress);
+        
+        private void tryDownloadLibrary(string repo, string lib, ref int stage, int total, int progress) {
+            WebClient client = new WebClient();
+            string url = libUrl(repo, lib);
+            string destination = libPath(libraries, lib);
+            string fileName = Path.GetFileName(url);
+            Directory.CreateDirectory(destination);
+            destination = Path.Combine(destination, fileName);
+            if (!File.Exists(destination)) {
+                onChanged(EventType.START, 0, "Stage " + stage + "/" + total + ": Downloading " + lib);
+                try {
+                    try {
+                        client.DownloadFile(url, destination);          //Attempt to download the latest version
+                    } catch (WebException) {
+                        client.DownloadFile(libUrl(repo, lib + "-SNAPSHOT"), destination);
+                    }
+                    onChanged(EventType.END, progress + 15, "");
+                } catch (WebException e) {
+                    Console.Write(e.Message);
+                    try {
+                        extractLibraryLocal(fileName, destination); //Otherwise extract it if present
+                    } catch (Exception g) {
+                        Console.Write(g.Message);                   //Fail if we can't get the file out D:
+                        onChanged(EventType.FAIL, progress + 15, url, fileName);
+                    }
+                }
             } else {
-                onChanged(EventType.SKIP, 50, "Stage " + stage + "/" + total + ": Downloading " + fileName + " (SKIPPED)");
+                onChanged(EventType.SKIP, 50, "Stage " + stage + "/" + total + ": Downloading " + lib + " (SKIPPED)");
             }
             stage++;
         }
 
-        private void downloadLibrary(string repo, string fileName, string destination, int progress) {
-            WebClient client = new WebClient();
-            string url = repo + "/" + fileName;
-            try {
-                client.DownloadFile(url, destination);          //Attempt to download the latest version
-                onChanged(EventType.END, progress + 15, "");
-            } catch (WebException e) {
-                Console.Write(e.Message);
+        public static string libUrl(string url, string lib) {
+            string[] libParts = lib.Replace(":", " ").Trim().Split(' ').Reverse().ToArray();
+            return Path.Combine(url, parseLib(lib), libParts[1] + "-" + libParts[0] + ".jar");
+        }
+
+        public static string libPath(string path, string lib) {
+            return Path.Combine(path, parseLib(lib));
+        }
+
+        private static string parseLib(string lib) {
+            string[] parts = lib.Replace(":", " ").Trim().Split(' ');
+            parts[0] = Path.Combine(parts[0].Split('.'));
+            return Path.Combine(parts);
+        }
+
+        public static void verifyLocation(string url, Action negativeCallback) {
+            Task.Factory.StartNew(() => {
+                WebRequest request = WebRequest.Create(url);
+                WebResponse response = null;
+                request.Method = "HEAD";
                 try {
-                    extractLibraryLocal(fileName, destination); //Otherwise extract it if present
-                } catch (Exception g) {
-                    Console.Write(g.Message);                   //Fail if we can't get the file out D:
-                    onChanged(EventType.FAIL, progress + 15, url, fileName);
+                    response = request.GetResponse();
+                } catch (WebException e) {
+                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound) negativeCallback(); ;
+                } finally {
+                    if (response != null) response.Close();
                 }
-            }
+            });
         }
 
         public static void extractLibraryLocal(string resource, string file) {
