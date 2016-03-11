@@ -4,5 +4,5 @@ Setup utility for the BlazeLoader API. Will eventually be able to configure a cl
 ##### To be implemented:
  1. <s>Client install</s>
  2. Server install
- 3. Manual install
+ 3. <s>Manual install</s>
  4. Dev (MCP/ForgeGradle) + Eclipse
