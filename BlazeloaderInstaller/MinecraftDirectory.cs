@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace BlazeloaderInstaller {
     public class MinecraftDirectory {
@@ -49,20 +47,29 @@ namespace BlazeloaderInstaller {
             libraries = Path.Combine(minecraftDir, "libraries");
         }
 
-        public void readVersions() {
+        public void readVersions(Action completed) {
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.DoWork += doWork;
+            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler((object o, RunWorkerCompletedEventArgs args) => {
+                completed();
+            });
+            worker.RunWorkerAsync();
+        }
+
+        private void doWork(object sender, DoWorkEventArgs e) {
             if (Directory.Exists(versions)) {
                 string[] dirs = Directory.GetDirectories(versions);
                 foreach (string i in dirs) {
                     var v = new Version(this, i);
                     if (v.file != null) {
                         allDetectedVersions.Add(v);
-                        if (isVersionSupported(v)) {
-                            detectedVersions.Add(v);
-                        }
                     }
                 }
                 foreach (Version v in allDetectedVersions) {
                     v.initApis(v.Name.ToLower());
+                    if (isVersionSupported(v)) {
+                        detectedVersions.Add(v);
+                    }
                 }
                 allDetectedVersions = allDetectedVersions.OrderBy(o => o.getApiIndex()).ToList();
                 detectedVersions = detectedVersions.OrderBy(o => o.getApiIndex()).ToList();
@@ -70,7 +77,7 @@ namespace BlazeloaderInstaller {
         }
 
         private bool isVersionSupported(Version v) {
-            return showUnsupported || v.Name.Split('-')[0] == Configs.MINECRAFT_VERSION;
+            return showUnsupported || v.mcVer == Configs.MINECRAFT_VERSION;
         }
 
         public Version createVersion(string name, JsonFormat data) {
@@ -207,7 +214,7 @@ namespace BlazeloaderInstaller {
                 Parent.inheritApis(this);
             }
             Library lib = null;
-            mcVer = nameL.Split('-')[0];
+            if (mcVer == null) mcVer = nameL.Split('-')[0];
             if ((lib = file.matchingLibrary("blazeloader")) != null) {
                 isBlazeLoader = true;
                 blazeVer = new VersionNumber(lib.name.Split(':').Last());
@@ -236,6 +243,7 @@ namespace BlazeloaderInstaller {
                 initApis(Name.ToLower());
                 recurseCatch = false;
             }
+            target.mcVer = mcVer;
             if (isBlazeLoader) {
                 target.isBlazeLoader = isBlazeLoader;
                 target.blazeVer = blazeVer;
@@ -280,6 +288,7 @@ namespace BlazeloaderInstaller {
                 if (isLiteLoader) result += "\n LiteLoader " + liteVer;
                 if (isForge) result += "\n Minecraft Forge " + forgeVer;
                 if (isMCPatcher) result += "\n MCPatcher " + mcpVer;
+                if (!Name.StartsWith(mcVer)) result += "\n Minecraft " + mcVer;
             }
             return result;
         }

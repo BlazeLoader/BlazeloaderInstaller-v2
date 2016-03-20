@@ -27,7 +27,17 @@ namespace BlazeloaderInstaller {
 
         public override void init(MainWindow window, IStageHandler prev) {
             win = window;
-            man.readVersions();
+            Canvas.Children.Add(new ProgressBar() {
+                Style = (Style)Application.Current.Resources["ProgressStyle"],
+                Margin = new Thickness(10, 98, 10, 0),
+                VerticalAlignment = VerticalAlignment.Top,
+                IsIndeterminate = true
+            });
+            man.readVersions(versionsLoaded);
+        }
+
+        private void versionsLoaded() {
+            Canvas.Children.Clear();
             if  (man.DetectedTotal  == 0) {
                 Canvas.Children.Add(new TextBlock() {
                     Text = "Error: No valid minecraft installation was found at the given location.",
@@ -44,7 +54,7 @@ namespace BlazeloaderInstaller {
                     Margin = new Thickness(10, 10, 10, 0),
                     VerticalAlignment = VerticalAlignment.Top
                 });
-                if (window.isDev) {
+                if (win.isDev) {
                     CheckBox showa = new CheckBox() {
                         Content = "Display All Versions",
                         Margin = new Thickness(10, 30, 0, 0),
@@ -76,6 +86,7 @@ namespace BlazeloaderInstaller {
                 listing.GroupStyle.Add((GroupStyle)Application.Current.Resources["VersionGrouping"]);
                 setSource(man.detectedVersions);
             }
+            win.updateVisibilities(1);
         }
 
         private void Listing_SelectionChanged(object sender, SelectionChangedEventArgs e) {

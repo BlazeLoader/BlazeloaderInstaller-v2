@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -18,31 +19,46 @@ namespace BlazeloaderInstaller {
     public delegate void CompletedEventHandler(object sender, EventArgs args);
 
     public class LibraryManager {
+        private BackgroundWorker worker;
+
         private string libraries;
         
         public event ChangedEventHandler StageChanged;
-        private void onChanged(EventType ev, int progress, params string[] message) {
-            if (StageChanged != null) StageChanged(this, new ChangedEventArgs() {
-                type = ev, progress = progress, message = message
-            });
+        private void onChanged(object sender, ProgressChangedEventArgs e) {
+            if (StageChanged != null) StageChanged(this, (ChangedEventArgs)e.UserState);
         }
         
         public event CompletedEventHandler Completed;
-        private void onCompleted() {
+        private void onCompleted(object sender, RunWorkerCompletedEventArgs e) {
             if (Completed != null) Completed(this, new EventArgs());
+            worker = null;
         }
 
         public LibraryManager(string minecraftDir) {
             libraries = Path.Combine(minecraftDir, "libraries");
         }
-
+        
         public void writeRequiredLibraries() {
+            worker = new BackgroundWorker();
+            worker.DoWork += doWork;
+            worker.RunWorkerCompleted += onCompleted;
+            worker.WorkerReportsProgress = true;
+            worker.ProgressChanged += onChanged;
+            worker.RunWorkerAsync();
+        }
+
+        private void doWork(object o, DoWorkEventArgs args) {
             int stage = 0;
             tryDownloadLibrary(Configs.LITELOADER_URL, Configs.LITELOADER_LIB, ref stage, 2, 0);
             tryDownloadLibrary(Configs.BLAZELOADER_URL, Configs.BLAZELOADER_LIB, ref stage, 2, 0);
-            onCompleted();
         }
-        
+
+        private void changeState(EventType type, int percentage, params string[] message) {
+            worker.ReportProgress(percentage, new ChangedEventArgs() {
+                progress = percentage, message = message
+            });
+        }
+
         private void tryDownloadLibrary(string repo, string lib, ref int stage, int total, int progress) {
             WebClient client = new WebClient();
             string url = libUrl(repo, lib);
@@ -51,25 +67,25 @@ namespace BlazeloaderInstaller {
             Directory.CreateDirectory(destination);
             destination = Path.Combine(destination, fileName);
             if (!File.Exists(destination)) {
-                onChanged(EventType.START, 0, "Stage " + stage + "/" + total + ": Downloading " + lib);
+                changeState(EventType.START, 0, "Stage " + stage + "/" + total + ": Downloading " + lib);
                 try {
                     try {
                         client.DownloadFile(url, destination);          //Attempt to download the latest version
                     } catch (WebException) {
                         client.DownloadFile(libUrl(repo, lib + "-SNAPSHOT"), destination);
                     }
-                    onChanged(EventType.END, progress + 15, "");
+                    changeState(EventType.END, progress + 15, "");
                 } catch (WebException e) {
                     Console.Write(e.Message);
                     try {
                         extractLibraryLocal(fileName, destination); //Otherwise extract it if present
                     } catch (Exception g) {
                         Console.Write(g.Message);                   //Fail if we can't get the file out D:
-                        onChanged(EventType.FAIL, progress + 15, url, fileName);
+                        changeState(EventType.FAIL, progress + 15, url, fileName);
                     }
                 }
             } else {
-                onChanged(EventType.SKIP, 50, "Stage " + stage + "/" + total + ": Downloading " + lib + " (SKIPPED)");
+                changeState(EventType.SKIP, 50, "Stage " + stage + "/" + total + ": Downloading " + lib + " (SKIPPED)");
             }
             stage++;
         }
@@ -97,7 +113,7 @@ namespace BlazeloaderInstaller {
                 try {
                     response = request.GetResponse();
                 } catch (WebException e) {
-                    if (((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound) negativeCallback(); ;
+                    if (e.Response == null || ((HttpWebResponse)e.Response).StatusCode == HttpStatusCode.NotFound) negativeCallback(); ;
                 } finally {
                     if (response != null) response.Close();
                 }
