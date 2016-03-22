@@ -43,8 +43,7 @@ namespace BlazeloaderInstaller {
 
         public MainWindow() {
             InitializeComponent();
-            title.Content += " " + Configs.MINECRAFT_VERSION;
-            subtitle.Content = Configs.BLAZELOADER_VERSION;
+            subtitle.Content = Configs.BLAZELOADER_VERSION + " for Minecraft " + Configs.MINECRAFT_VERSION;
         }
 
         public Visibility PrevVisibility {

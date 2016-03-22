@@ -157,7 +157,7 @@ namespace BlazeloaderInstaller {
             created.file.save();
             if (includeProfile.IsChecked == true) {
                 man.getProfiles().AddProfile(new Profile() {
-                    name = VersionName,
+                    name = launcherName.Text,
                     javaArgs = launcherArgs.Text,
                     launcherVisibilityOnGameClose = (string)launcherVisibility.SelectedItem,
                     lastVersionId = created.Name,
